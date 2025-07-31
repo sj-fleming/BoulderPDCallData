@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Response Time Visualizations</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+        font-family: sans-serif;
+        padding: 20px;
+    }
+        svg {
+        margin-bottom: 50px;
+    }
+        .bar {
+        fill: steelblue;
+    }
+        .bar:hover {
+        fill: orange;
+    }
+        .axis-label {
+        font-size: 14px;
+        font-weight: bold;
+    }
+    </style>
+</head>
+<body>
+    <h1>Response Time Visualizations</h1>
+
+    <h2>Average Response Time by Year</h2>
+    <svg id="yearChart" width="700" height="400"></svg>
+
+    <h2>Average Response Time by Season</h2>
+    <svg id="seasonChart" width="700" height="400"></svg>
+
+    <h2>Average Response Time by Hour</h2>
+    <svg id="hourChart" width="700" height="400"></svg>
+
+    <script>
+    
+    // Replace these paths with the actual URLs to your JSON data hosted on GitHub Pages
+    const yearDataUrl = 'yearly_avg_response.json';
+    const seasonDataUrl = 'season_avg_response.json';
+    const hourDataUrl = 'hourly_avg_response.json';
+
+    function drawBarChart(svgId, dataUrl, xField, yField, xLabel, yLabel) {
+        const svg = d3.select(svgId);
+        const width = +svg.attr("width") - 100;
+        const height = +svg.attr("height") - 100;
+        const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+        
+        const chart = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        d3.json(dataUrl).then(data => {
+            data.forEach(d => {
+                d[xField] = isNaN(+d[xField]) ? d[xField] : +d[xField];
+                d[yField] = +d[yField];
+        });
+
+        const x = d3.scaleBand()
+            .domain(data.map(d => d[xField]))
+            .range([0, width])
+            .padding(0.2);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d[yField])])
+            .nice()
+            .range([height, 0]);
+
+        chart.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x))
+            .selectAll("text")
+            .attr("transform", "rotate(0)");
+
+        chart.append("g")
+            .call(d3.axisLeft(y));
+
+        chart.selectAll(".bar")
+            .data(data)
+            .join("rect")
+            .attr("class", "bar")
+            .attr("x", d => x(d[xField]))
+            .attr("y", d => y(d[yField]))
+            .attr("width", x.bandwidth())
+            .attr("height", d => height - y(d[yField]));
+
+        svg.append("text")
+            .attr("x", (width + margin.left + margin.right) / 2)
+            .attr("y", height + margin.top + margin.bottom - 10)
+            .attr("text-anchor", "middle")
+            .attr("class", "axis-label")
+            .text(xLabel);
+
+        svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height / 2 - margin.top)
+            .attr("y", 20)
+            .attr("text-anchor", "middle")
+            .attr("class", "axis-label")
+            .text(yLabel);
+        });
+    }
+    
+    drawBarChart("#yearChart", yearDataUrl, "Year", "Average_Response_Time_Minutes", "Year", "Avg Response Time (min)");
+    drawBarChart("#seasonChart", seasonDataUrl, "Season", "Response_Time_Minutes", "Season", "Avg Response Time (min)");
+    drawBarChart("#hourChart", hourDataUrl, "Hour", "Response_Time_Minutes", "Hour of Day", "Avg Response Time (min)");
+  </script>
+</body>
+</html>
